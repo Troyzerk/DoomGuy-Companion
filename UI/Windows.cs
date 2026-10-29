@@ -335,7 +335,7 @@ public sealed class MiniWindow : Window
                 shell.SaveSettings();
             }
         };
-        SourceInitialized += (_, _) => ApplyScale();
+        SourceInitialized += (_, _) => { ApplyScale(); ZOrder.HideFromAltTab(this); };
         DpiChanged += (_, _) => ApplyScale(keepPosition: true);
     }
 
@@ -581,6 +581,23 @@ public static class ZOrder
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] private static extern IntPtr SetWinEventHook(uint min, uint max, IntPtr module, WinEventProc proc, uint pid, uint tid, uint flags);
 
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] private static extern IntPtr GetWindowLong(IntPtr h, int index);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")] private static extern IntPtr SetWindowLong(IntPtr h, int index, IntPtr value);
+
+    /// <summary>
+    /// Keeps a floating window out of Alt+Tab and Task View (a tool window), so switching apps only offers
+    /// real ones. Call once its handle exists.
+    /// </summary>
+    public static void HideFromAltTab(Window w)
+    {
+        const int ExStyle = -20;
+        const long ToolWindow = 0x80, AppWindow = 0x40000;
+        var h = new WindowInteropHelper(w).Handle;
+        if (h == IntPtr.Zero) return;
+        long ex = GetWindowLong(h, ExStyle).ToInt64();
+        SetWindowLong(h, ExStyle, new IntPtr(ex & ~AppWindow | ToolWindow));
+    }
+
     public static void BringToTop(Window w)
     {
         if (!w.IsVisible) return;
@@ -626,7 +643,7 @@ public sealed class AlertWindow : Window
         Content = image;
         Host = new ScreenHost(image, AlertScreen.W, AlertScreen.H) { Drag = _ => { try { DragMove(); } catch { } } };
         Screen = new AlertScreen(assets, Host, hub);
-        SourceInitialized += (_, _) => Host.SetPixelScale(this, Scale);
+        SourceInitialized += (_, _) => { Host.SetPixelScale(this, Scale); ZOrder.HideFromAltTab(this); };
     }
 
     private int Scale => Math.Clamp(_hub.Settings.MiniScale + 1, 2, 4);
