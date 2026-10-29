@@ -1,0 +1,16 @@
+# Build output
+bin/
+obj/
+App/
+publish/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Never commit game data: DoomGuy reads your own IWAD at runtime
+*.wad
+*.WAD
