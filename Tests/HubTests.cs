@@ -78,6 +78,19 @@ public class HubTests
         Assert.Empty(hub.Tasks);
     }
 
+    [Fact]
+    public void The_day_keeps_its_longest_finished_job()
+    {
+        var hub = NewHub();
+        hub.Progress("quick", "Quick job", 10, "running", "", "");
+        hub.Progress("slow", "Light bake", 10, "running", "", "");
+        hub.Tasks.Single(t => t.Id == "slow").StartedAt = DateTime.Now.AddMinutes(-22);
+        hub.Progress("quick", "", 100, "done", "", "");
+        hub.Progress("slow", "", 100, "done", "", "");
+        Assert.Equal("LIGHT BAKE", hub.State.LongestTodayName);
+        Assert.InRange(hub.State.LongestTodaySeconds, 22 * 60 - 5, 22 * 60 + 5);
+    }
+
     [Theory]
     [InlineData(0, false, 5, 100)]
     [InlineData(1, false, 5, 80)]

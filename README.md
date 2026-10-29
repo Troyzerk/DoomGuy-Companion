@@ -59,7 +59,7 @@ App\DoomGuy.exe
   process that called DoomGuy, up through its parents to Windows Terminal, VS Code or a console). Click a
   finished job to mark it seen; `X` dismisses.
 - **REMIND**: type `stand up in 30m`, `call mum at 18:00`, `water every 1h`, `rent tomorrow 9am`, then Enter.
-- **LOG**: everything that happened. **SETUP**: sound, volume, god mode (silent), bar/face, sizes,
+- **LOG**: everything that happened, under a line on how today went (done, errors, the longest task or job). **SETUP**: sound, volume, god mode (silent), bar/face, sizes,
   hide-in-fullscreen, start with Windows, Claude hooks.
 
 Face-only mode is the quiet one: no HUD text at all. When a task finishes (a Claude task or a job reporting

@@ -83,6 +83,18 @@ public partial class App : Application, IShell
 
         if (startMini) Minimize(); else ShowMain();
         if (_hub.FiringCount > 0) _alert.ShowAlert();
+        // Started as the head: draw one main-window frame unseen a few seconds in, so its art (upscaled on
+        // first use, about 100 ms in HD) is ready and opening it later doesn't stall.
+        if (startMini)
+        {
+            var warm = new DispatcherTimer(DispatcherPriority.ApplicationIdle) { Interval = TimeSpan.FromSeconds(5) };
+            warm.Tick += (_, _) =>
+            {
+                warm.Stop();
+                if (!_main.IsVisible) _main.Screen.Draw();
+            };
+            warm.Start();
+        }
 
         _clock.Start();
         var timer = new DispatcherTimer(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(10) };

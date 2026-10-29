@@ -198,11 +198,21 @@ public sealed class Hub
         if (_dirty && (now - _lastSave).TotalSeconds > 5) Save();
     }
 
+    /// <summary>Keeps today's longest finished task or job, for the LOG tab's summary.</summary>
+    private void Longest(string name, TimeSpan took)
+    {
+        if (took.TotalSeconds <= State.LongestTodaySeconds) return;
+        State.LongestTodaySeconds = took.TotalSeconds;
+        State.LongestTodayName = name;
+    }
+
     private void RollDay()
     {
         if (State.Day == DateTime.Today) return;
         State.Day = DateTime.Today;
         State.DoneToday = State.StartedToday = State.MessagesToday = State.ErrorsToday = 0;
+        State.LongestTodaySeconds = 0;
+        State.LongestTodayName = "";
         Touch();
     }
 
@@ -371,6 +381,7 @@ public sealed class Hub
                 var took = TimeParse.Short(now - t.StartedAt);
                 t.Detail = $"DONE IN {took}, {t.ToolCount} TOOL{(t.ToolCount == 1 ? "" : "S")}";
                 State.DoneToday++;
+                Longest(t.Name, now - t.StartedAt);
                 Pickup($"{t.Name}: TASK COMPLETE ({took})", "WPNUP");
                 Announce($"{t.Name} DONE!", t.Title, t.Detail, Ink.Gold);
                 break;
@@ -488,6 +499,7 @@ public sealed class Hub
                 if (wasActive)
                 {
                     State.DoneToday++;
+                    Longest(t.Title.ToUpperInvariant(), now - t.StartedAt);
                     Pickup($"{t.Title}: DONE", "ITEMUP");
                     Announce($"{t.Title} DONE!", t.Name, t.Detail, Ink.Gold);
                 }

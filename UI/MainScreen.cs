@@ -673,19 +673,33 @@ public sealed class MainScreen : Screen
 
     // ---------------------------------------------------------------- LOG
 
+    /// <summary>One line on how today went: finished, errors, and the longest task or job.</summary>
+    private string DaySummary()
+    {
+        var s = _hub.State;
+        if (s.DoneToday == 0 && s.ErrorsToday == 0) return "TODAY: NOTHING FINISHED YET";
+        var text = $"TODAY: {s.DoneToday} DONE, {s.ErrorsToday} ERROR{(s.ErrorsToday == 1 ? "" : "S")}";
+        if (s.LongestTodaySeconds >= 1) text += $", LONGEST {TimeParse.Short(TimeSpan.FromSeconds(s.LongestTodaySeconds))} ({s.LongestTodayName})";
+        return text;
+    }
+
     private void DrawLog()
     {
         int rowH = 11, bottom = Y + H - 1;
-        int visible = (bottom - Top) / rowH;
+        // The day's summary stays at the top; the entries scroll under it.
+        R!.SmallText(X + 2, Top + 2, FitSmall(DaySummary(), W - 4), Ink.Gold);
+        R!.Separator(X, Top + 10, W);
+        int top = Top + 13;
+        int visible = (bottom - top) / rowH;
         var log = _hub.Log;
         ref int scroll = ref _scroll[2];
-        if (Hover(X, Top, W, bottom - Top)) scroll -= In.Wheel * 3;
+        if (Hover(X, top, W, bottom - top)) scroll -= In.Wheel * 3;
         scroll = Math.Clamp(scroll, 0, Math.Max(0, log.Count - visible));
-        if (log.Count == 0) { TextCenter(X + W / 2, Top + 40, "NOTHING HAS HAPPENED. YET.", Ink.Dim); return; }
+        if (log.Count == 0) { TextCenter(X + W / 2, top + 40, "NOTHING HAS HAPPENED. YET.", Ink.Dim); return; }
         for (int i = 0; i < visible && scroll + i < log.Count; i++)
         {
             var l = log[log.Count - 1 - scroll - i];
-            int y = Top + i * rowH;
+            int y = top + i * rowH;
             Text(X + 2, y, l.At.Date == DateTime.Today ? l.At.ToString("HH:mm") : l.At.ToString("dd/MM"), Ink.Dim);
             var ink = l.Level switch { "success" => Ink.Gold, "warn" => Ink.Yellow, "error" => Ink.Red, _ => Ink.Gray };
             Text(X + 44, y, Fit(l.Text, W - 46), ink);

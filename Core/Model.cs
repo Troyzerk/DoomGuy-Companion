@@ -80,6 +80,9 @@ public sealed class SavedState
     public int StartedToday { get; set; }
     public int MessagesToday { get; set; }
     public int ErrorsToday { get; set; }
+    /// <summary>Today's longest finished task or job (LOG tab summary).</summary>
+    public double LongestTodaySeconds { get; set; }
+    public string LongestTodayName { get; set; } = "";
     /// <summary>Values pushed to /gauge, by name, so a restart doesn't blank them.</summary>
     public Dictionary<string, int> Pushed { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 }
