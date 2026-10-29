@@ -39,6 +39,7 @@ public sealed class Hub
     public readonly List<Announcement> Announcements = [];
     public Sound? Sound;
     public long Tic;
+    private long _lastSoundTic;
 
     /// <summary>A reminder just went off (the alert window shows it).</summary>
     public event Action? ReminderFired;
@@ -117,7 +118,13 @@ public sealed class Hub
         {
             _hurt = Math.Max(_hurt, _oldHealth - h);
             DamageCount = Math.Min(100, DamageCount + _oldHealth - h);
-            if (h <= 0) Play("PLDETH");
+            if (h <= 0) Play("PLDETH"); else HealthSound("PLPAIN");
+        }
+        else if (h > _oldHealth)
+        {
+            // Like picking up a stimpack: the gold flash and the pickup sound.
+            BonusCount = Math.Min(BonusCount + 6, 30);
+            HealthSound("ITEMUP");
         }
         _oldHealth = h;
         UpdateFace(h);
@@ -207,8 +214,20 @@ public sealed class Hub
 
     public void Play(string sound)
     {
+        _lastSoundTic = Tic;
         if (Settings.God) return;
         Sound?.Play(sound);
+    }
+
+    /// <summary>
+    /// The sound for health going up or down. Skipped when something already made a sound in the last half
+    /// second, so nothing doubles up: a failure plays its own pain sound and also costs health, a finished task
+    /// plays its own pickup. Quiet for the first seconds while polled sources report in.
+    /// </summary>
+    private void HealthSound(string sound)
+    {
+        if (Tic < 3 * TicRate || Tic - _lastSoundTic < TicRate / 2) return;
+        Play(sound);
     }
 
     public void Message(string text, Ink ink = Ink.Red, string level = "info", bool log = true)

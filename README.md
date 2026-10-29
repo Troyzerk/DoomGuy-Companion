@@ -101,6 +101,9 @@ Bindings live in **profiles** (HOME, WORK, ADD for more; click a profile's name 
 a count becomes a percent that is 100% at zero and 0% at **EMPTY AT** (5 unless set). So with HEALTH on WORKING
 TASKS, inverted, he's at full health with nothing running and dead with five jobs on the go.
 
+Health going up plays Doom's item pickup with the gold flash, like grabbing a stimpack; going down plays the
+pain grunt. They stay quiet when the change came with its own sound (a failure, a finished task).
+
 When health drops (a badge goes red, a limit runs low), the face takes the hit like in the game: red flash,
 wince, more blood. The Claude status line (optional) also shows `DoomGuy 85% | 5h 23% used | 7d 61% used`.
 
