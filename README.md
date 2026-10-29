@@ -10,6 +10,17 @@ Every graphic, font and sound is read at runtime from your own Doom IWAD (found 
 Steam and GOG folders, e.g. `Ultimate Doom\base\DOOM.WAD`, or picked on first run). This repository contains
 no Doom data at all; you need a legitimate copy of The Ultimate Doom or Doom II.
 
+![The TASKS tab with HD MODE on: Claude sessions and jobs, one waiting on you](docs/tasks.png)
+
+| Minimized to the status bar | Or just the head, announcing what needs you |
+|---|---|
+| ![The status bar floating on the desktop with a message above it](docs/statusbar.png) | ![The marine's head with a speech bubble: a session needs you](docs/head.png) |
+
+![The HUD tab with HD MODE off: the original 8-bit look](docs/hud-8bit.png)
+
+Screenshots use made-up projects. The Doom art in them is drawn from the game's own WAD at runtime, as it
+would be on your machine.
+
 ## Requirements
 
 - Windows 10 or 11
