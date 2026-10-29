@@ -27,6 +27,12 @@ would be on your machine.
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) to build
 - `DOOM.WAD` or `DOOM2.WAD` from your own copy of the game
 
+## Download
+
+Grab `DoomGuy-<version>-win-x64.zip` from [Releases](https://github.com/Troyzerk/DoomGuy-Companion/releases/latest),
+unzip it and run `DoomGuy.exe`: nothing else to install. It isn't code-signed, so SmartScreen may warn the
+first time (More info, then Run anyway).
+
 ## Building and running
 
 ```
