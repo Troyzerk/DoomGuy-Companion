@@ -331,7 +331,8 @@ public sealed class MainScreen : Screen
             }
             else R!.SmallText(nx, y + 13, FitSmall(t.Detail.ToUpperInvariant(), X + W - 14 - nx), Ink.Gray);
 
-            if (over && t.State != TaskState.Working)
+            // Something waiting on you can't be dismissed: it clears itself once it's answered.
+            if (over && t.State is not (TaskState.Working or TaskState.NeedsYou))
             {
                 if (Button(X + W - 9, y + 8, "X", Ink.Dark, Ink.Yellow)) { _hub.Dismiss(t); _hub.Play("PSTOP"); break; }
             }

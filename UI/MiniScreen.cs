@@ -144,14 +144,31 @@ public sealed class Bubble
     public void Dismiss() => _current = null;
 
     /// <summary>
+    /// A Claude session is waiting on you: the bubble says so ahead of everything else and can't be clicked
+    /// away. It goes when the session moves on (answered, denied, stopped or closed).
+    /// </summary>
+    public bool Pinned { get; private set; }
+
+    private Announcement? NeedsYouCard()
+    {
+        var waiting = _hub.Tasks.Where(t => t.State == TaskState.NeedsYou).ToList();
+        if (waiting.Count == 0) return null;
+        var t = waiting[0];
+        return new Announcement { Headline = $"{t.Name} NEEDS YOU", Line2 = t.Detail, Line3 = t.Title, Ink = Ink.Red };
+    }
+
+    /// <summary>
     /// Redraws if the content changed. pointRight = the head is to the right of the bubble; anchorY = the
     /// head's middle in Doom pixels, where the tail points and the box centres; pixel = HD MODE off.
     /// </summary>
     public void Draw(bool hover, bool pointRight, int anchorY, bool pixel)
     {
-        var lines = _current != null ? Lines(_current) : hover ? Summary() : [];
-        Opacity = lines.Count == 0 ? 0 : _current == null ? 1 : Math.Min(1.0, (_tics + 1) / (double)FadeInTics);
-        var key = $"{pointRight}|{anchorY}|{pixel}|{_current?.Ink}|" + string.Join("|", lines);
+        var pinned = NeedsYouCard();
+        Pinned = pinned != null;
+        var shown = pinned ?? _current;
+        var lines = shown != null ? Lines(shown) : hover ? Summary() : [];
+        Opacity = lines.Count == 0 ? 0 : shown != _current || _current == null ? 1 : Math.Min(1.0, (_tics + 1) / (double)FadeInTics);
+        var key = $"{pointRight}|{anchorY}|{pixel}|{shown?.Ink}|" + string.Join("|", lines);
         if (key == _drawn) return;
         _drawn = key;
         Dirty = true;
@@ -171,11 +188,11 @@ public sealed class Bubble
 
         c.Chamfer(bx + k, by + k, bw, bh, cut, Shade, Shade, thick);
         c.Chamfer(bx, by, bw, bh, cut, Fill, Edge, thick);
-        if (_current != null)
+        if (shown != null)
         {
             // The announcement's colour: a strip along the top and a fading wash behind the headline.
-            var accent = Accent(_current.Ink);
-            int headline = lines.TakeWhile(l => l.Ink == _current.Ink).Count();
+            var accent = Accent(shown.Ink);
+            int headline = lines.TakeWhile(l => l.Ink == shown.Ink).Count();
             c.GradientH(bx + thick, by + thick, bw - 2 * thick, (PadY + Pitch * headline) * k, accent & 0xFFFFFF | 0x30000000, accent & 0xFFFFFF);
             c.Fill(bx + cut, by, Math.Min(32 * k, bw - 2 * cut), pixel ? 1 : 3, accent);
         }
@@ -209,6 +226,12 @@ public sealed class Bubble
         {
             list.AddRange(A.Font.Wrap(a.Line2, TextW, 2).Select(l => new Line(l, Ink.White)));
             list.Add(new Line(A.Font.Fit(a.Line3, TextW), Ink.Gray));
+        }
+        if (Pinned)
+        {
+            int others = _hub.NeedsYouCount - 1;
+            list.Add(new Line(others > 0 ? $"ANSWER IN CLAUDE ({others} MORE WAITING)" : "ANSWER IN CLAUDE TO CLEAR", Ink.Dim, Small: true));
+            return list;
         }
         int more = _hub.Announcements.Count;
         list.Add(new Line(more > 0 ? $"CLICK FOR NEXT ({more} MORE)" : "CLICK TO DISMISS", Ink.Dim, Small: true));

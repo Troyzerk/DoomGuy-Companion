@@ -48,7 +48,9 @@ App\DoomGuy.exe
 Face-only mode is the quiet one: no HUD text at all. When a task finishes (a Claude task or a job reporting
 done/failed) or anything sends a `/notify`, the marine announces it in a speech bubble beside his head. It
 stays until you click it; if more are queued the bubble says how many, and each click brings the next. With
-nothing to announce, hovering the head shows a short summary in the same bubble. The bubble opens
+nothing to announce, hovering the head shows a short summary in the same bubble. A Claude session waiting on
+you (a permission or a question) is shown first, in red, and can't be clicked away; it clears itself once you
+answer in Claude. Its row in TASKS has no dismiss button for the same reason. The bubble opens
 towards the middle of the screen, points at the head, and its text is 3/4 of FACE SIZE. Headlines wrap over
 two lines and messages over four instead of being cut off; a strip in the announcement's colour (gold done,
 red failed, yellow warning, blue info) marks what kind it is. It follows HD MODE: smooth like the main

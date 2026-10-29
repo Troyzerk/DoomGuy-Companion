@@ -583,6 +583,7 @@ public sealed class Hub
 
     public void Dismiss(TaskItem t)
     {
+        if (t.State == TaskState.NeedsYou) return;
         Tasks.Remove(t);
         Touch();
     }

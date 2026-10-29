@@ -307,9 +307,11 @@ public sealed class MiniWindow : Window
             else Host.Drag?.Invoke(e);
         };
         // Clicking the announcement is the only way it goes away; the last one also marks everything seen.
+        // Something waiting on you won't go: Doom's "oof" says so.
         _bubbleImg.MouseLeftButtonDown += (_, e) =>
         {
             e.Handled = true;
+            if (_bubble.Pinned) { hub.Play("NOWAY"); return; }
             if (!_bubble.Announcing) { Clicked?.Invoke(); return; }
             _bubble.Dismiss();
             hub.Play("SWTCHN");
