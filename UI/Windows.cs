@@ -63,11 +63,14 @@ public sealed class Stage
 
     private uint[] _hdShown = [];
 
-    /// <summary>Shows the HD canvas instead of the pixel screen (the pixel image stays, invisible, for input).</summary>
-    public void ShowHd(bool on)
+    /// <summary>
+    /// Shows the HD canvas instead of the pixel screen (the pixel image stays, invisible, for input); or, with
+    /// overlay, over it (the 8-bit look's small text).
+    /// </summary>
+    public void ShowHd(bool on, bool overlay = false)
     {
         if (_hdImg == null) return;
-        _hdImg.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        _hdImg.Visibility = on || overlay ? Visibility.Visible : Visibility.Collapsed;
         Screen.Opacity = on ? 0 : 1;
     }
 
@@ -154,7 +157,33 @@ public sealed class MainWindow : Window
             WindowState = WindowState.Normal;
             shell.Minimize();
         };
-        SourceInitialized += (_, _) => ApplyScale(position: true);
+        SourceInitialized += (_, _) =>
+        {
+            ApplyScale(position: true);
+            HwndSource.FromHwnd(new WindowInteropHelper(this).Handle)?.AddHook(KeepAspect);
+        };
+    }
+
+    /// <summary>
+    /// Resizing keeps the screen's 320x200 shape, so it always scales evenly and fills the window with no
+    /// black bars. Edges: the other side follows. Corners: whichever way the mouse moved more leads.
+    /// </summary>
+    private static IntPtr KeepAspect(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        const int WM_SIZING = 0x0214;
+        if (msg != WM_SIZING) return IntPtr.Zero;
+        var r = Marshal.PtrToStructure<MiniWindow.RECT>(lParam);
+        int edge = wParam.ToInt32(), w = r.R - r.L, h = r.B - r.T;
+        bool heightLeads = edge is 3 or 6;
+        if (edge is 4 or 5 or 7 or 8 && MiniWindow.GetWindowRect(hwnd, out var old))
+            heightLeads = Math.Abs(h - (old.B - old.T)) * 320 > Math.Abs(w - (old.R - old.L)) * 200;
+        if (heightLeads) w = (int)Math.Round(h * 320 / 200.0); else h = (int)Math.Round(w * 200 / 320.0);
+        // Grow or shrink away from the edge being dragged.
+        if (edge is 1 or 4 or 7) r.L = r.R - w; else r.R = r.L + w;
+        if (edge is 3 or 4 or 5) r.T = r.B - h; else r.B = r.T + h;
+        Marshal.StructureToPtr(r, lParam, false);
+        handled = true;
+        return 1;
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -493,10 +522,10 @@ public sealed class MiniWindow : Window
         _hub.Settings.MiniTop = Top;
     }
 
-    [StructLayout(LayoutKind.Sequential)] private struct RECT { public int L, T, R, B; }
+    [StructLayout(LayoutKind.Sequential)] internal struct RECT { public int L, T, R, B; }
     [StructLayout(LayoutKind.Sequential)] private struct MONITORINFO { public int Size; public RECT Monitor, Work; public uint Flags; }
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] private static extern bool GetWindowRect(IntPtr h, out RECT r);
+    [DllImport("user32.dll")] internal static extern bool GetWindowRect(IntPtr h, out RECT r);
     [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromWindow(IntPtr h, uint flags);
     [DllImport("user32.dll")] private static extern IntPtr MonitorFromRect(ref RECT r, uint flags);

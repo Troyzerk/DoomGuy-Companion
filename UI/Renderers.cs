@@ -24,6 +24,9 @@ public interface IRenderer
     void Dialog(int x, int y, int w, int h);
     void Dim();
     int Text(int x, int y, string s, Ink ink, bool glow = false);
+    /// <summary>The font at 3/4 size, smooth, for dense detail lines; returns the end x in units.</summary>
+    int SmallText(int x, int y, string s, Ink ink);
+    int SmallWidth(string s);
     void Sprite(string name, int cx, int bottom);
     void Skull(int x, int y, int frame);
     void Thermo(int x, int y, int value);
@@ -33,19 +36,28 @@ public interface IRenderer
     void ApplyMelt(int[] melt);
 }
 
-/// <summary>The 1993 look: the 8-bit screen, flats, the view border, hard pixels.</summary>
+/// <summary>
+/// The 1993 look: the 8-bit screen, flats, the view border, hard pixels. Small text can't be drawn in 320x200,
+/// so it goes on <see cref="Overlay"/>, a transparent HD layer shown over the pixel screen.
+/// </summary>
 public sealed class ClassicRenderer : IRenderer
 {
     private readonly Assets A;
     private readonly Frame F;
     private readonly Frame _old;
     private readonly byte _line, _yellow, _field, _barBack, _bar, _barDone;
+    private readonly HdFont _small;
+    public readonly HdCanvas Overlay = new(320, 200);
+    /// <summary>Anything on the overlay this frame (it stays hidden, and isn't cleared, while unused).</summary>
+    public bool OverlayUsed { get; private set; }
+    private bool _overlayDirty;
 
     public ClassicRenderer(Assets a, Frame f)
     {
         A = a;
         F = f;
         _old = new Frame(f.W, f.H);
+        _small = new HdFont(a, 3);
         _line = a.Nearest(70, 50, 30);
         _yellow = a.Nearest(255, 240, 70);
         _field = a.Nearest(34, 26, 18);
@@ -55,9 +67,17 @@ public sealed class ClassicRenderer : IRenderer
     }
 
     public bool Hd => false;
-    public void BeginFrame() => F.ResetClip();
-    public void SetClip(int x, int y, int w, int h) => F.SetClip(x, y, w, h);
-    public void ResetClip() => F.ResetClip();
+
+    public void BeginFrame()
+    {
+        F.ResetClip();
+        Overlay.ResetClip();
+        if (_overlayDirty) Array.Clear(Overlay.Px);
+        _overlayDirty = OverlayUsed = false;
+    }
+
+    public void SetClip(int x, int y, int w, int h) { F.SetClip(x, y, w, h); Overlay.ClipUnits(x, y, w, h); }
+    public void ResetClip() { F.ResetClip(); Overlay.ResetClip(); }
 
     public void Background(int x, int y, int w, int h)
     {
@@ -99,6 +119,15 @@ public sealed class ClassicRenderer : IRenderer
         return A.Font.Draw(F, x, y, s, A.Ink(ink));
     }
 
+    public int SmallText(int x, int y, string s, Ink ink)
+    {
+        OverlayUsed = _overlayDirty = true;
+        int end = _small.Draw(Overlay, x * K, y * K, s, ink, shadow: 2);
+        return (end + K - 1) / K;
+    }
+
+    public int SmallWidth(string s) => (_small.Width(s) + K - 1) / K;
+
     public void Sprite(string name, int cx, int bottom)
     {
         var p = A.Sprite(name);
@@ -118,10 +147,17 @@ public sealed class ClassicRenderer : IRenderer
 
     public void StatusBar(Hub hub) => UI.StatusBar.Draw(F, A, hub, 0, 168);
     public void TitlePic() => F.Patch(A.TitlePic, 0, 0, offsets: false);
-    public void Snapshot() => _old.CopyFrom(F);
+    public void Snapshot()
+    {
+        _old.CopyFrom(F);
+        Overlay.Snapshot();
+    }
 
     public void ApplyMelt(int[] melt)
     {
+        // The overlay melts with the screen (its columns are the same width in units).
+        Overlay.ApplyMelt(melt);
+        OverlayUsed = _overlayDirty = true;
         for (int i = 0; i < melt.Length; i++)
         {
             int yy = Math.Max(0, melt[i]);
@@ -289,6 +325,14 @@ public sealed class ModernRenderer : IRenderer
         int end = _font.Draw(Canvas, x * K, y * K, s, ink, glow ? AccentGlow : 0);
         return (end + K - 1) / K;
     }
+
+    public int SmallText(int x, int y, string s, Ink ink)
+    {
+        int end = _small.Draw(Canvas, x * K, y * K, s, ink, shadow: 2);
+        return (end + K - 1) / K;
+    }
+
+    public int SmallWidth(string s) => (_small.Width(s) + K - 1) / K;
 
     public void Sprite(string name, int cx, int bottom)
     {

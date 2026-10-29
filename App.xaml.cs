@@ -133,8 +133,16 @@ public partial class App : Application, IShell
                 if (_hub.PaletteIndex != 0) HdFaces.Tint(c.Px, c.Px, _hub.PaletteIndex);
                 _main.Stage.PresentHd(c.Px);
             }
-            else _main.Host.Present(pal);
-            _main.Stage.ShowHd(_main.Screen.Modern);
+            else
+            {
+                _main.Host.Present(pal);
+                if (_main.Screen.Overlay is { } o)
+                {
+                    if (_hub.PaletteIndex != 0) HdFaces.Tint(o.Px, o.Px, _hub.PaletteIndex);
+                    _main.Stage.PresentHd(o.Px);
+                }
+            }
+            _main.Stage.ShowHd(_main.Screen.Modern, overlay: _main.Screen.Overlay != null);
         }
         _main.UpdateIcon(_hub.FaceIndex);
         if (_mini.IsVisible)

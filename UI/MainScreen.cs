@@ -127,6 +127,9 @@ public sealed class MainScreen : Screen
 
     /// <summary>This frame was drawn by the HD renderer (the window shows its canvas instead of the pixels).</summary>
     public bool Modern => R is ModernRenderer;
+
+    /// <summary>The 8-bit look's small-text layer, when this frame put anything on it.</summary>
+    public HdCanvas? Overlay => R is ClassicRenderer { OverlayUsed: true } c ? c.Overlay : null;
     public HdCanvas Canvas => _modern.Canvas;
 
     public void ShowTab(int tab) => _pendingTab = (Tab)Math.Clamp(tab, 0, TabNames.Length - 1);
@@ -317,14 +320,16 @@ public sealed class MainScreen : Screen
             TextRight(X + W - 14, y + 3, state, ink);
             Text(ex + 6, y + 3, Fit(t.Title.ToUpperInvariant(), X + W - 14 - stateW - 6 - ex - 6), Ink.White);
 
+            // The detail line (what it's doing right now) in the small font: more of it fits, and it reads as
+            // the quieter line under the name.
             if (!t.IsClaude && t.Percent >= 0 && t.State is TaskState.Working or TaskState.Done)
             {
-                int bw = 100;
+                int bw = 64;
                 R!.Progress(nx, y + 14, bw, 5, t.Percent, t.State == TaskState.Done);
-                int px = Text(nx + bw + 4, y + 13, $"{t.Percent}%", Ink.Yellow);
-                Text(px + 6, y + 13, Fit(t.Detail.ToUpperInvariant(), X + W - 14 - px - 6), Ink.Gray);
+                int px = R.SmallText(nx + bw + 4, y + 13, $"{t.Percent}%", Ink.Yellow);
+                R.SmallText(px + 4, y + 13, FitSmall(t.Detail.ToUpperInvariant(), X + W - 14 - px - 4), Ink.Gray);
             }
-            else Text(nx, y + 13, Fit(t.Detail.ToUpperInvariant(), W - 40), Ink.Gray);
+            else R!.SmallText(nx, y + 13, FitSmall(t.Detail.ToUpperInvariant(), X + W - 14 - nx), Ink.Gray);
 
             if (over && t.State != TaskState.Working)
             {
@@ -340,6 +345,9 @@ public sealed class MainScreen : Screen
         if (_hub.Tasks.Any(t => !t.IsClaude && t.State is TaskState.Done or TaskState.Failed))
             if (Button(bx, bottom + 1, "CLEAR FINISHED JOBS", Ink.Gray)) { _hub.ClearFinished(); _hub.Play("PSTOP"); }
     }
+
+    /// <summary>Fit for the small font: it is 3/4 the width, so 4/3 the font pixels fit in the same units.</summary>
+    private string FitSmall(string s, int units) => A.Font.Fit(s, units * 4 / 3);
 
     private void TaskIcon(TaskItem t, int cx, int bottom)
     {

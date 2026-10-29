@@ -35,10 +35,12 @@ App\DoomGuy.exe
 ## The screen
 
 - `_` or Esc minimizes to the status bar, `X` asks the quit question. Tab switches tabs (with Doom's screen melt).
+  Dragging an edge or corner resizes the window but keeps Doom's 320x200 shape, so it always scales evenly.
 - The status bar / head stays on top of every window: it re-asserts its place whenever another window comes
   to the front (and every second), and comes back on screen if a monitor change strands it. HIDE IN FULLSCREEN
   (off by default) only hides it for a borderless fullscreen game or video on the same monitor.
-- **TASKS**: Claude sessions and reported jobs. Click a finished one to mark it seen; `X` dismisses.
+- **TASKS**: Claude sessions and reported jobs, each with what it's doing right now in a smaller line under it.
+  Click a finished one to mark it seen; `X` dismisses.
 - **REMIND**: type `stand up in 30m`, `call mum at 18:00`, `water every 1h`, `rent tomorrow 9am`, then Enter.
 - **LOG**: everything that happened. **SETUP**: sound, volume, god mode (silent), bar/face, sizes,
   hide-in-fullscreen, start with Windows, Claude hooks.
