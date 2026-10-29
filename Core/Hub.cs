@@ -40,6 +40,9 @@ public sealed class Hub
     public Sound? Sound;
     public long Tic;
     private long _lastSoundTic;
+    /// <summary>Health when its last sound played, and how far it must move before the next.</summary>
+    private int _soundHealth = 100;
+    private const int HealthSoundStep = 5;
 
     /// <summary>A reminder just went off (the alert window shows it).</summary>
     public event Action? ReminderFired;
@@ -60,7 +63,7 @@ public sealed class Hub
         Gauges = new Gauges(this);
         RollDay();
         foreach (var r in Reminders) r.NextNag = DateTime.MinValue;
-        _oldHealth = Health;
+        _oldHealth = _soundHealth = Health;
     }
 
     // ---------------------------------------------------------------- derived numbers
@@ -118,15 +121,17 @@ public sealed class Hub
         {
             _hurt = Math.Max(_hurt, _oldHealth - h);
             DamageCount = Math.Min(100, DamageCount + _oldHealth - h);
-            if (h <= 0) Play("PLDETH"); else HealthSound("PLPAIN");
-        }
-        else if (h > _oldHealth)
-        {
-            // Like picking up a stimpack: the gold flash and the pickup sound.
-            BonusCount = Math.Min(BonusCount + 6, 30);
-            HealthSound("ITEMUP");
+            if (h <= 0) { Play("PLDETH"); _soundHealth = h; }
         }
         _oldHealth = h;
+        // Sounds go by how far health has moved since the last one: a source that drifts a point at a time
+        // (context, plan left) stays quiet until it adds up. Going up is a stimpack: the gold flash too.
+        if (h > 0 && Math.Abs(h - _soundHealth) >= HealthSoundStep)
+        {
+            if (h > _soundHealth) BonusCount = Math.Min(BonusCount + 6, 30);
+            HealthSound(h < _soundHealth ? "PLPAIN" : "ITEMUP");
+            _soundHealth = h;
+        }
         UpdateFace(h);
     }
 

@@ -164,13 +164,38 @@ public sealed class MainWindow : Window
         };
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WINDOWPOS { public IntPtr Hwnd, After; public int X, Y, Cx, Cy; public uint Flags; }
+
     /// <summary>
     /// Resizing keeps the screen's 320x200 shape, so it always scales evenly and fills the window with no
-    /// black bars. Edges: the other side follows. Corners: whichever way the mouse moved more leads.
+    /// black bars. Dragging an edge: the other side follows; a corner: whichever way the mouse moved more
+    /// leads. Any other resize (Win+arrow snapping, a DPI change) keeps the width and fixes the height.
+    /// The size is remembered when a resize ends.
     /// </summary>
-    private static IntPtr KeepAspect(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    private IntPtr KeepAspect(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
-        const int WM_SIZING = 0x0214;
+        const int WM_SIZING = 0x0214, WM_WINDOWPOSCHANGING = 0x0046, WM_EXITSIZEMOVE = 0x0232;
+        if (msg == WM_WINDOWPOSCHANGING)
+        {
+            var p = Marshal.PtrToStructure<WINDOWPOS>(lParam);
+            if ((p.Flags & 0x1) != 0 || p.Cx <= 0) return IntPtr.Zero;
+            int want = (int)Math.Round(p.Cx * 200 / 320.0);
+            // Within a pixel is rounding from WM_SIZING already holding the shape; leave it.
+            if (Math.Abs(p.Cy - want) <= 1) return IntPtr.Zero;
+            p.Cy = want;
+            Marshal.StructureToPtr(p, lParam, false);
+            return IntPtr.Zero;
+        }
+        if (msg == WM_EXITSIZEMOVE)
+        {
+            if (_settings.MainWidth is not double saved || Math.Abs(saved - ActualWidth) >= 1)
+            {
+                _settings.MainWidth = ActualWidth;
+                _shell.SaveSettings();
+            }
+            return IntPtr.Zero;
+        }
         if (msg != WM_SIZING) return IntPtr.Zero;
         var r = Marshal.PtrToStructure<MiniWindow.RECT>(lParam);
         int edge = wParam.ToInt32(), w = r.R - r.L, h = r.B - r.T;
@@ -204,10 +229,20 @@ public sealed class MainWindow : Window
     {
         var dpi = VisualTreeHelper.GetDpi(this);
         var work = SystemParameters.WorkArea;
-        int s = Math.Max(1, _settings.WindowScale);
-        while (s > 1 && (320 * s / dpi.DpiScaleX > work.Width || 200 * s / dpi.DpiScaleY > work.Height)) s--;
-        Width = 320 * s / dpi.DpiScaleX;
-        Height = 200 * s / dpi.DpiScaleY;
+        if (_settings.MainWidth is double mw && mw >= MinWidth)
+        {
+            // The size it was last dragged to, shrunk if it no longer fits this screen.
+            double w = Math.Min(mw, Math.Min(work.Width, work.Height * 320 / 200));
+            Width = w;
+            Height = w * 200 / 320;
+        }
+        else
+        {
+            int s = Math.Max(1, _settings.WindowScale);
+            while (s > 1 && (320 * s / dpi.DpiScaleX > work.Width || 200 * s / dpi.DpiScaleY > work.Height)) s--;
+            Width = 320 * s / dpi.DpiScaleX;
+            Height = 200 * s / dpi.DpiScaleY;
+        }
         if (!position) return;
         if (_settings.MainLeft is double l && _settings.MainTop is double t && OnScreen(l, t, Width, Height)) { Left = l; Top = t; }
         else { Left = work.Left + (work.Width - Width) / 2; Top = work.Top + (work.Height - Height) / 2; }

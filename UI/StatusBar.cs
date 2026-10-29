@@ -67,11 +67,25 @@ public static class StatusBar
             f.Fill(px, py, 1, PlateH, a.Nearest(10, 10, 10));
             f.Fill(px, py + PlateH - 1, w, 1, a.Nearest(95, 95, 95));
             f.Fill(px + w - 1, py, 1, PlateH, a.Nearest(95, 95, 95));
-            // The plates are narrow: close the letter gaps before giving up and cutting the word.
-            int tight = a.Font.Width(label) <= w - 4 ? 0 : 1, room = w - 2;
-            var text = label;
-            while (text.Length > 1 && a.Font.Width(text, tight) > room) text = text[..^1];
-            a.Font.Draw(f, px + (w - a.Font.Width(text, tight)) / 2, py + 1, text, a.Ink(Ink.Gray), tight);
+            // The plates are narrow: close the letter gaps, and if it still doesn't fit, squeeze the word
+            // sideways rather than cutting letters off (the AMMO plate only has 40 pixels).
+            int tight = a.Font.Width(label) <= w - 4 ? 0 : 1, room = w - 2, tw = a.Font.Width(label, tight);
+            if (tw <= room) a.Font.Draw(f, px + (w - tw) / 2, py + 1, label, a.Ink(Ink.Gray), tight);
+            else Squeezed(f, a, px + 1, py + 1, label, room);
+        }
+    }
+
+    /// <summary>Text drawn tightened and then narrowed to 'width' by dropping evenly spaced columns.</summary>
+    private static void Squeezed(Frame f, Assets a, int x, int y, string text, int width)
+    {
+        int tw = a.Font.Width(text, 1);
+        var tmp = new Frame(tw, 8);
+        a.Font.Draw(tmp, 0, 0, text, a.Ink(Ink.Gray), 1);
+        for (int dx = 0; dx < width; dx++)
+        {
+            int sx = dx * tw / width;
+            for (int dy = 0; dy < tmp.H; dy++)
+                if (tmp.On[dy * tw + sx]) f.Put(x + dx, y + dy, tmp.Idx[dy * tw + sx]);
         }
     }
 

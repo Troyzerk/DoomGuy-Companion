@@ -55,6 +55,8 @@ public sealed class Settings
     public double? MiniTop { get; set; }
     public double? MainLeft { get; set; }
     public double? MainTop { get; set; }
+    /// <summary>The main window's width (DIPs) after the last resize; unset = WindowScale.</summary>
+    public double? MainWidth { get; set; }
     public bool StartMinimized { get; set; }
     public bool HideOverFullscreen { get; set; }
     public bool God { get; set; }
