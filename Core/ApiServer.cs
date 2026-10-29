@@ -310,7 +310,7 @@ public sealed class ApiServer
         /gauge     name, value (0-100 or green/yellow/red): feeds a slot wired to PUSHED with that name
         /profile   [name=WORK]: switch the bar's wiring (no name: say which is active)
         /statusline  Claude Code status line JSON (plan limits, context); prints a short line back
-        /show /mini  bring up the window ([tab=0-3]: tasks, remind, log, setup) or the status bar
+        /show /mini  bring up the window ([tab=0-4]: tasks, remind, hud, log, setup) or the status bar
         /perf        memory, caches and frame cost since the last /perf (JSON)
 
         CLI: DoomGuy.exe notify "text" [--level success] [--title T]

@@ -147,7 +147,25 @@ public sealed class Gauges
 
     public Reading Read(string slot) => Read(Binding(slot));
 
+    /// <summary>
+    /// INVERT: the slot counts down instead. A percent becomes 100 minus it; a count becomes a percent that is
+    /// 100 at none and 0 at EMPTY AT (5 unless set), so e.g. health is full with no jobs and gone at five.
+    /// </summary>
+    public static bool Inverted(SlotBinding b) => b.Args.TryGetValue("INVERT", out var v) && v == "ON";
+
+    public static int EmptyAt(SlotBinding b) =>
+        (int)Math.Max(1, Num(b.Args.TryGetValue("EMPTY AT", out var v) ? v : "", 5));
+
+    /// <summary>The value the bar shows: the source's reading, inverted if asked. Status stays the raw reading.</summary>
     public Reading Read(SlotBinding b)
+    {
+        var r = Raw(b);
+        if (!Inverted(b) || r.Value is not int v) return r;
+        double inverted = Def(b.Source).Percent ? 100 - v : 100 - v * 100.0 / EmptyAt(b);
+        return r with { Value = Math.Clamp((int)Math.Round(inverted), 0, 100) };
+    }
+
+    private Reading Raw(SlotBinding b)
     {
         string Arg(string name, string fallback = "") => b.Args.TryGetValue(name, out var v) && v.Trim().Length > 0 ? v.Trim() : fallback;
         switch (b.Source)
@@ -260,7 +278,9 @@ public sealed class Gauges
 
     private Reading Polled(SlotBinding b)
     {
-        var key = b.Source + "|" + string.Join("|", b.Args.OrderBy(kv => kv.Key).Select(kv => kv.Key + "=" + kv.Value));
+        // Only what changes the fetch: flipping INVERT or renaming the label doesn't re-poll the server.
+        var key = b.Source + "|" + string.Join("|", b.Args.Where(kv => kv.Key is not ("INVERT" or "EMPTY AT" or "LABEL"))
+            .OrderBy(kv => kv.Key).Select(kv => kv.Key + "=" + kv.Value));
         if (!_polls.TryGetValue(key, out var poll)) _polls[key] = poll = new Poll();
         var now = DateTime.Now;
         if (!poll.Busy && now >= poll.Next)

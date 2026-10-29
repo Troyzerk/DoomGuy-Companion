@@ -478,7 +478,7 @@ public sealed class MainScreen : Screen
             sx += Width(def.Label) + 6;
             if (Button(sx, y, ">", Ink.Gold, Ink.Yellow)) CycleSource(slot, +1);
             var r = g.Read(slot);
-            var shown = r.Value == null ? "--" : def.Percent ? $"{r.Value}%" : $"{r.Value}";
+            var shown = r.Value == null ? "--" : def.Percent || Gauges.Inverted(b) ? $"{r.Value}%" : $"{r.Value}";
             TextRight(X + W - 4, y, shown, r.Error ? Ink.Red : Ink.Gold);
         }
         R!.Separator(X, y, W);
@@ -489,11 +489,18 @@ public sealed class MainScreen : Screen
         // (What the source means is in the header line above.)
         y += 4;
         var read = g.Read(bind);
-        Text(X + 4, y, Fit((read.Error ? "" : "NOW: ") + read.Status, W - 8), read.Error ? Ink.Red : Ink.Gray);
+        // INVERT sits on this line: the settings below already fill the panel for the busiest sources.
+        bool inverted = Gauges.Inverted(bind);
+        var invert = inverted ? "INVERT: ON" : "INVERT: OFF";
+        int ix = X + W - 4 - Width(invert);
+        Text(X + 4, y, Fit((read.Error ? "" : "NOW: ") + read.Status, ix - X - 12), read.Error ? Ink.Red : Ink.Gray);
+        if (Button(ix, y, invert, inverted ? Ink.Yellow : Ink.Gray, Ink.Yellow)) ToggleInvert(bind);
         y += 13;
 
-        // Its settings, then LABEL: the word on the bar (blank = say what it tracks).
-        foreach (var arg in src.Args.Append("LABEL"))
+        // Its settings, then EMPTY AT for an inverted count, then LABEL: the word on the bar (blank = say what it tracks).
+        var args = src.Args.AsEnumerable();
+        if (inverted && !src.Percent) args = args.Append("EMPTY AT");
+        foreach (var arg in args.Append("LABEL"))
         {
             var key = _hudSlot + ":" + arg;
             Text(X + 4, y, arg, Ink.Red);
@@ -502,7 +509,12 @@ public sealed class MainScreen : Screen
             else
             {
                 var v = bind.Args.GetValueOrDefault(arg, "");
-                var shown = v.Length == 0 ? (arg == "LABEL" ? $"({g.Label(_hudSlot)})" : "(NOT SET)") : arg == "TOKEN" ? new string('*', Math.Min(12, v.Length)) : v.ToUpperInvariant();
+                var shown = v.Length == 0 ? arg switch
+                {
+                    "LABEL" => $"({g.Label(_hudSlot)})",
+                    "EMPTY AT" => $"({Gauges.EmptyAt(bind)}: 0% AT {Gauges.EmptyAt(bind)} OR MORE)",
+                    _ => "(NOT SET)",
+                } : arg == "TOKEN" ? new string('*', Math.Min(12, v.Length)) : v.ToUpperInvariant();
                 if (Button(fx, y, Fit(shown, W - 84), v.Length == 0 ? Ink.Dim : Ink.White, Ink.Yellow)) BeginEdit(key, v);
             }
             y += 12;
@@ -528,6 +540,14 @@ public sealed class MainScreen : Screen
         _hudSlot = slot;
         _editKey = null;
         _hub.Gauges.Invalidate();
+        _shell.SaveSettings();
+        _hub.Play("PISTOL");
+    }
+
+    private void ToggleInvert(SlotBinding b)
+    {
+        if (Gauges.Inverted(b)) b.Args.Remove("INVERT"); else b.Args["INVERT"] = "ON";
+        _editKey = null;
         _shell.SaveSettings();
         _hub.Play("PISTOL");
     }

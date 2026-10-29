@@ -97,6 +97,10 @@ Bindings live in **profiles** (HOME, WORK, ADD for more; click a profile's name 
 | COMMAND | a PowerShell command; its last output line is the value |
 | PUSHED | whatever was last sent to `/gauge?name=NAME&value=..` or `DoomGuy.exe gauge NAME VALUE` |
 
+**INVERT** (on the NOW line under the slots) makes a slot count down instead. A percent becomes 100 minus it;
+a count becomes a percent that is 100% at zero and 0% at **EMPTY AT** (5 unless set). So with HEALTH on WORKING
+TASKS, inverted, he's at full health with nothing running and dead with five jobs on the go.
+
 When health drops (a badge goes red, a limit runs low), the face takes the hit like in the game: red flash,
 wince, more blood. The Claude status line (optional) also shows `DoomGuy 85% | 5h 23% used | 7d 61% used`.
 
