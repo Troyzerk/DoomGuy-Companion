@@ -275,7 +275,7 @@ public sealed class MainScreen : Screen
                 s = _menuSel >= 0 && _menuSel < _items.Count ? _items[_menuSel].Help : "";
                 break;
             default:
-                s = $"HEALTH {_hub.Health}%   WORKING {_hub.WorkingCount}   NEEDS YOU {_hub.NeedsYouCount}   DONE {_hub.State.DoneToday}";
+                s = _tasksHint ?? $"HEALTH {_hub.Health}%   WORKING {_hub.WorkingCount}   NEEDS YOU {_hub.NeedsYouCount}   DONE {_hub.State.DoneToday}";
                 break;
         }
         Text(X + 2, Y + 1, Fit(s.ToUpperInvariant(), W - 4), Ink.Gray);
@@ -283,8 +283,12 @@ public sealed class MainScreen : Screen
 
     // ---------------------------------------------------------------- TASKS
 
+    /// <summary>What clicking the hovered task row would do, for the header line (null = the usual numbers).</summary>
+    private string? _tasksHint;
+
     private void DrawTasks()
     {
+        _tasksHint = null;
         const int rowH = 22;
         int bottom = Y + H - 11;
         var tasks = _hub.Tasks;
@@ -336,7 +340,14 @@ public sealed class MainScreen : Screen
             {
                 if (Button(X + W - 9, y + 8, "X", Ink.Dark, Ink.Yellow)) { _hub.Dismiss(t); _hub.Play("PSTOP"); break; }
             }
-            if (Clicked(X, y, W, rowH) && t.Unseen) { _hub.MarkSeen(t); _hub.Play("PISTOL"); }
+            // A Claude session whose window is known: clicking goes there (and marks it seen).
+            bool canGo = t.IsClaude && CallerWindow.Alive(t.Window);
+            if (over && canGo) _tasksHint = t.State == TaskState.NeedsYou ? $"CLICK TO GO ANSWER {t.Name}" : $"CLICK TO GO TO {t.Name}";
+            if (Clicked(X, y, W, rowH))
+            {
+                if (canGo) _hub.Play(_hub.GoTo(t) ? "SWTCHN" : "NOWAY");
+                else if (t.Unseen) { _hub.MarkSeen(t); _hub.Play("PISTOL"); }
+            }
         }
         R!.SetClip(X, Top, W, Y + H - Top);
 

@@ -66,7 +66,8 @@ public sealed class ApiServer
             var stream = client.GetStream();
             var (method, target, headers, body) = await Read(stream);
             if (method == null) return;
-            var (status, type, text) = await Route(method, target!, headers!, body!);
+            int clientPort = (client.Client.RemoteEndPoint as IPEndPoint)?.Port ?? 0;
+            var (status, type, text) = await Route(method, target!, headers!, body!, clientPort);
             var payload = Encoding.UTF8.GetBytes(text);
             var head = $"HTTP/1.1 {status} {(status == 200 ? "OK" : status == 404 ? "Not Found" : "Bad Request")}\r\n" +
                        $"Content-Type: {type}; charset=utf-8\r\nContent-Length: {payload.Length}\r\n" +
@@ -112,6 +113,22 @@ public sealed class ApiServer
         return (first[0].ToUpperInvariant(), first[1], headers, Encoding.UTF8.GetString(body.Take(length).ToArray()));
     }
 
+    private readonly Dictionary<string, IntPtr> _sessionWindows = new();
+
+    /// <summary>
+    /// The window a Claude session runs in, found from the first hook that reaches us (and again only if
+    /// that window has gone): hooks fire on every tool call, the window never changes.
+    /// </summary>
+    private IntPtr SessionWindow(string session, string cwd, int clientPort)
+    {
+        if (session.Length == 0 || clientPort == 0) return IntPtr.Zero;
+        lock (_sessionWindows)
+            if (_sessionWindows.TryGetValue(session, out var known) && CallerWindow.Alive(known)) return known;
+        var found = CallerWindow.Find(clientPort, Port, cwd);
+        if (found != IntPtr.Zero) lock (_sessionWindows) _sessionWindows[session] = found;
+        return found;
+    }
+
     private static int IndexOf(List<byte> d, byte[] pat)
     {
         for (int i = 0; i + pat.Length <= d.Count; i++)
@@ -123,7 +140,7 @@ public sealed class ApiServer
         return -1;
     }
 
-    private async Task<(int, string, string)> Route(string method, string target, Dictionary<string, string> headers, string body)
+    private async Task<(int, string, string)> Route(string method, string target, Dictionary<string, string> headers, string body, int clientPort)
     {
         var q = target.IndexOf('?');
         var path = (q >= 0 ? target[..q] : target).TrimEnd('/').ToLowerInvariant();
@@ -174,7 +191,8 @@ public sealed class ApiServer
 
             case "/claude":
                 if (json.ValueKind != JsonValueKind.Object) return (400, "text/plain", "expected the Claude Code hook JSON as the body\n");
-                await _ui.InvokeAsync(() => _hub.HandleClaude(json));
+                var window = SessionWindow(Hub.Str(json, "session_id"), Hub.Str(json, "cwd"), clientPort);
+                await _ui.InvokeAsync(() => _hub.HandleClaude(json, window));
                 return (200, "application/json", "{}");
 
             case "/notify":

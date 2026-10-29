@@ -40,7 +40,9 @@ App\DoomGuy.exe
   to the front (and every second), and comes back on screen if a monitor change strands it. HIDE IN FULLSCREEN
   (off by default) only hides it for a borderless fullscreen game or video on the same monitor.
 - **TASKS**: Claude sessions and reported jobs, each with what it's doing right now in a smaller line under it.
-  Click a finished one to mark it seen; `X` dismisses.
+  Click a Claude session to jump to the terminal or editor window it runs in (found from its hooks: the
+  process that called DoomGuy, up through its parents to Windows Terminal, VS Code or a console). Click a
+  finished job to mark it seen; `X` dismisses.
 - **REMIND**: type `stand up in 30m`, `call mum at 18:00`, `water every 1h`, `rent tomorrow 9am`, then Enter.
 - **LOG**: everything that happened. **SETUP**: sound, volume, god mode (silent), bar/face, sizes,
   hide-in-fullscreen, start with Windows, Claude hooks.
@@ -49,8 +51,8 @@ Face-only mode is the quiet one: no HUD text at all. When a task finishes (a Cla
 done/failed) or anything sends a `/notify`, the marine announces it in a speech bubble beside his head. It
 stays until you click it; if more are queued the bubble says how many, and each click brings the next. With
 nothing to announce, hovering the head shows a short summary in the same bubble. A Claude session waiting on
-you (a permission or a question) is shown first, in red, and can't be clicked away; it clears itself once you
-answer in Claude. Its row in TASKS has no dismiss button for the same reason. The bubble opens
+you (a permission or a question) is shown first, in red, and can't be clicked away: clicking it takes you to that
+session's window instead, and it clears itself once you answer in Claude. Its row in TASKS has no dismiss button for the same reason. The bubble opens
 towards the middle of the screen, points at the head, and its text is 3/4 of FACE SIZE. Headlines wrap over
 two lines and messages over four instead of being cut off; a strip in the announcement's colour (gold done,
 red failed, yellow warning, blue info) marks what kind it is. It follows HD MODE: smooth like the main

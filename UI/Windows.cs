@@ -342,11 +342,17 @@ public sealed class MiniWindow : Window
             else Host.Drag?.Invoke(e);
         };
         // Clicking the announcement is the only way it goes away; the last one also marks everything seen.
-        // Something waiting on you won't go: Doom's "oof" says so.
+        // Something waiting on you won't go: the click takes you to its window instead (or Doom's "oof" if
+        // that window isn't known).
         _bubbleImg.MouseLeftButtonDown += (_, e) =>
         {
             e.Handled = true;
-            if (_bubble.Pinned) { hub.Play("NOWAY"); return; }
+            if (_bubble.Pinned)
+            {
+                var waiting = hub.Tasks.FirstOrDefault(t => t.State == TaskState.NeedsYou);
+                hub.Play(waiting != null && hub.GoTo(waiting) ? "SWTCHN" : "NOWAY");
+                return;
+            }
             if (!_bubble.Announcing) { Clicked?.Invoke(); return; }
             _bubble.Dismiss();
             hub.Play("SWTCHN");

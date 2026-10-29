@@ -273,7 +273,8 @@ public sealed class Hub
 
     // ---------------------------------------------------------------- Claude Code hooks
 
-    public void HandleClaude(JsonElement p)
+    /// <summary>A Claude Code hook event. window = the terminal or editor it came from, when that could be found.</summary>
+    public void HandleClaude(JsonElement p, IntPtr window = default)
     {
         if (p.ValueKind != JsonValueKind.Object) return;
         var ev = Str(p, "hook_event_name");
@@ -290,6 +291,7 @@ public sealed class Hub
             Tasks.Add(t);
         }
         if (cwd.Length > 0 && t.Cwd != cwd) { t.Cwd = cwd; t.Name = ProjectName(cwd, sid); }
+        if (window != IntPtr.Zero) t.Window = window;
         t.UpdatedAt = now;
         Touch();
 
@@ -586,6 +588,14 @@ public sealed class Hub
         Touch();
     }
 
+    /// <summary>Brings a Claude session's terminal or editor to the front. Call from the user's own click.</summary>
+    public bool GoTo(TaskItem t)
+    {
+        if (CallerWindow.Focus(t.Window)) { MarkSeen(t); return true; }
+        Message($"{t.Name}: CAN'T FIND ITS WINDOW (IT SHOWS UP WITH ITS NEXT STEP)", Ink.Gray, log: false);
+        return false;
+    }
+
     public void Dismiss(TaskItem t)
     {
         if (t.State == TaskState.NeedsYou) return;
@@ -666,7 +676,7 @@ public sealed class Hub
         working = WorkingCount,
         needsYou = NeedsYouCount,
         doneToday = State.DoneToday,
-        tasks = Tasks.Select(t => new { t.Id, kind = t.IsClaude ? "claude" : "job", t.Name, t.Title, t.Detail, state = t.State.ToString(), t.Percent, t.Unseen, t.StartedAt, t.UpdatedAt }),
+        tasks = Tasks.Select(t => new { t.Id, kind = t.IsClaude ? "claude" : "job", t.Name, t.Title, t.Detail, state = t.State.ToString(), t.Percent, t.Unseen, t.StartedAt, t.UpdatedAt, window = CallerWindow.Title(t.Window) }),
         reminders = Reminders.Select(r => new { r.Id, r.Text, r.Due, r.EverySeconds, r.Firing }),
         log = Log.TakeLast(20).Select(l => new { l.At, l.Level, l.Text }),
     };

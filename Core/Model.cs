@@ -22,6 +22,8 @@ public sealed class TaskItem
     public int ToolCount { get; set; }
     public int Percent { get; set; } = -1;
     public bool Unseen { get; set; }
+    /// <summary>The terminal or editor window a Claude session runs in (found from its hooks; not saved).</summary>
+    [JsonIgnore] public IntPtr Window { get; set; }
 }
 
 public sealed class Reminder

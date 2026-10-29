@@ -230,7 +230,9 @@ public sealed class Bubble
         if (Pinned)
         {
             int others = _hub.NeedsYouCount - 1;
-            list.Add(new Line(others > 0 ? $"ANSWER IN CLAUDE ({others} MORE WAITING)" : "ANSWER IN CLAUDE TO CLEAR", Ink.Dim, Small: true));
+            var first = _hub.Tasks.First(t => t.State == TaskState.NeedsYou);
+            var hint = CallerWindow.Alive(first.Window) ? "CLICK TO GO ANSWER IT" : "ANSWER IN CLAUDE TO CLEAR";
+            list.Add(new Line(others > 0 ? $"{hint} ({others} MORE WAITING)" : hint, Ink.Dim, Small: true));
             return list;
         }
         int more = _hub.Announcements.Count;
