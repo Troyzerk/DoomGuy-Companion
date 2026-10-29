@@ -18,6 +18,10 @@
 
   <ItemGroup>
     <Using Include="System.IO" />
+    <!-- The tests are their own project (Tests\DoomGuy.Tests.csproj). -->
+    <Compile Remove="Tests\**" />
+    <None Remove="Tests\**" />
+    <Page Remove="Tests\**" />
   </ItemGroup>
 
 </Project>

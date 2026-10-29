@@ -161,8 +161,14 @@ public sealed class Gauges
     {
         var r = Raw(b);
         if (!Inverted(b) || r.Value is not int v) return r;
-        double inverted = Def(b.Source).Percent ? 100 - v : 100 - v * 100.0 / EmptyAt(b);
-        return r with { Value = Math.Clamp((int)Math.Round(inverted), 0, 100) };
+        return r with { Value = Invert(v, Def(b.Source).Percent, EmptyAt(b)) };
+    }
+
+    /// <summary>INVERT's maths: a percent flips; a count is 100% at none and 0% at emptyAt or more.</summary>
+    public static int Invert(int value, bool percent, int emptyAt)
+    {
+        double inverted = percent ? 100 - value : 100 - value * 100.0 / Math.Max(1, emptyAt);
+        return Math.Clamp((int)Math.Round(inverted), 0, 100);
     }
 
     private Reading Raw(SlotBinding b)

@@ -1,5 +1,7 @@
 # DoomGuy
 
+[![Build](https://github.com/Troyzerk/DoomGuy-Companion/actions/workflows/build.yml/badge.svg)](https://github.com/Troyzerk/DoomGuy-Companion/actions/workflows/build.yml)
+
 A Doom-style desktop companion. It watches Claude Code sessions and anything else that reports to it, keeps
 reminders, and when minimized floats the original Doom status bar on the desktop, where the marine's face
 is the health bar.
@@ -27,6 +29,8 @@ dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true 
 App\DoomGuy.exe
 ```
 
+- `dotnet test Tests` runs the tests (reminder phrases, the WAD reader, the task and health rules). GitHub runs
+  the build and the tests on every push.
 - `--mini` starts minimized as the status bar.
 - Settings and state live in `%LOCALAPPDATA%\DoomGuy` (`settings.json`, `state.json`). Set `DOOMGUY_DATA` to use
   another folder, e.g. to run a test copy beside your own (give it another `Port` in its `settings.json`).
