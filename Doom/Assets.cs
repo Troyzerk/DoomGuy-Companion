@@ -27,9 +27,17 @@ public sealed class Assets
     // Face table layout, as in st_stuff.c.
     public const int FaceStride = 8, TurnRight = 3, TurnLeft = 4, Ouch = 5, EvilGrin = 6, Rampage = 7, God = 40, Dead = 41;
 
-    public Assets(WadFile wad)
+    /// <summary>The WAD the 42 face frames came from (a Doom WAD's Doomguy over Freedoom's art, or the art's own).</summary>
+    public readonly WadFile FaceWad;
+
+    /// <summary>
+    /// faceWad: where the marine's face comes from when that isn't the art's own WAD, so Doomguy can sit on
+    /// Freedoom's bar. Their base palettes are identical, so his pixels keep their colours.
+    /// </summary>
+    public Assets(WadFile wad, WadFile? faceWad = null)
     {
         Wad = wad;
+        FaceWad = faceWad != null && faceWad.Has("STFST00") ? faceWad : wad;
         IsDoom2 = wad.Has("MAP01");
 
         var playpal = wad.Lump("PLAYPAL") ?? throw new InvalidDataException("The WAD has no PLAYPAL; it is not a Doom IWAD.");
@@ -63,18 +71,19 @@ public sealed class Assets
         var title = wad.Lump("TITLEPIC");
         TitlePic = title != null && title.Length == 64000 ? Patch.FromRaw(title, 320, 200) : Patch.Parse(title);
         for (int i = 0; i < 6; i++) Keys[i] = Patch.Parse(wad.Lump($"STKEYS{i}"));
+        var fw = FaceWad;
         for (int pain = 0; pain < 5; pain++)
         {
             int b = pain * FaceStride;
-            for (int s = 0; s < 3; s++) Faces[b + s] = Patch.Parse(wad.Lump($"STFST{pain}{s}"));
-            Faces[b + TurnRight] = Patch.Parse(wad.Lump($"STFTR{pain}0"));
-            Faces[b + TurnLeft] = Patch.Parse(wad.Lump($"STFTL{pain}0"));
-            Faces[b + Ouch] = Patch.Parse(wad.Lump($"STFOUCH{pain}"));
-            Faces[b + EvilGrin] = Patch.Parse(wad.Lump($"STFEVL{pain}"));
-            Faces[b + Rampage] = Patch.Parse(wad.Lump($"STFKILL{pain}"));
+            for (int s = 0; s < 3; s++) Faces[b + s] = Patch.Parse(fw.Lump($"STFST{pain}{s}"));
+            Faces[b + TurnRight] = Patch.Parse(fw.Lump($"STFTR{pain}0"));
+            Faces[b + TurnLeft] = Patch.Parse(fw.Lump($"STFTL{pain}0"));
+            Faces[b + Ouch] = Patch.Parse(fw.Lump($"STFOUCH{pain}"));
+            Faces[b + EvilGrin] = Patch.Parse(fw.Lump($"STFEVL{pain}"));
+            Faces[b + Rampage] = Patch.Parse(fw.Lump($"STFKILL{pain}"));
         }
-        Faces[God] = Patch.Parse(wad.Lump("STFGOD0"));
-        Faces[Dead] = Patch.Parse(wad.Lump("STFDEAD0"));
+        Faces[God] = Patch.Parse(fw.Lump("STFGOD0"));
+        Faces[Dead] = Patch.Parse(fw.Lump("STFDEAD0"));
         Skull[0] = Patch.Parse(wad.Lump("M_SKULL1"));
         Skull[1] = Patch.Parse(wad.Lump("M_SKULL2"));
         ThermL = Patch.Parse(wad.Lump("M_THERML"));

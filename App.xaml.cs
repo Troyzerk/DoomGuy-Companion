@@ -43,13 +43,19 @@ public partial class App : Application, IShell
             return;
         }
 
-        var wad = ResolveWad();
-        if (wad == null) { Shutdown(); return; }
-        try { _assets = new Assets(new WadFile(wad)); }
+        var wads = ResolveWads();
+        if (wads == null) { Shutdown(); return; }
+        var (art, faceFrom) = wads.Value;
+        try
+        {
+            WadFile? faceWad = null;
+            try { if (faceFrom != null) faceWad = new WadFile(faceFrom); } catch { } // a broken face WAD just means Freedoom's face
+            _assets = new Assets(new WadFile(art), faceWad);
+        }
         catch (Exception ex)
         {
-            MessageBox.Show($"Couldn't read {wad}:\n{ex.Message}", "DoomGuy", MessageBoxButton.OK, MessageBoxImage.Error);
-            _settings.WadPath = null;
+            MessageBox.Show($"Couldn't read {art}:\n{ex.Message}", "DoomGuy", MessageBoxButton.OK, MessageBoxImage.Error);
+            if (!WadFile.IsBundled(art)) { _settings.WadPath = null; _settings.Art = "freedoom"; }
             SaveSettings();
             Shutdown();
             return;
@@ -259,21 +265,17 @@ public partial class App : Application, IShell
     }
 
     /// <summary>
-    /// Where the art and sounds come from: a WAD picked in SETUP, else an installed Doom, else the Freedoom
-    /// WAD shipped beside the exe (not saved as the choice, so installing Doom later takes over by itself).
-    /// Only when there's none of those does it ask.
+    /// The art and the face. The art is Freedoom, shipped beside the exe, or with GAME ART on DOOM your own Doom
+    /// WAD. Doomguy's face comes from your Doom WAD whenever there is one, so he's on Freedoom's bar too; only
+    /// with no Doom at all is the face Freedoom's. With neither WAD around, it asks.
     /// </summary>
-    private string? ResolveWad()
+    private (string Art, string? Face)? ResolveWads()
     {
-        if (_settings.WadPath is { } p && File.Exists(p)) return _wadInUse = p;
-        var found = WadFile.FindInstalled();
-        if (found != null)
-        {
-            _settings.WadPath = found;
-            SaveSettings();
-            return _wadInUse = found;
-        }
-        if (WadFile.Bundled() is { } free) return _wadInUse = free;
+        var doom = _yourDoom = YourDoom();
+        var free = WadFile.Bundled();
+        if (_settings.Art == "doom" && doom != null) return (_wadInUse = doom, null);
+        if (free != null) return (_wadInUse = free, doom);
+        if (doom != null) return (_wadInUse = doom, null);
 
         MessageBox.Show("DoomGuy draws everything from a Doom IWAD, and the Freedoom one it comes with is missing.\n\nPick DOOM.WAD, DOOM2.WAD or freedoom1.wad.",
             "DoomGuy", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -281,34 +283,57 @@ public partial class App : Application, IShell
         if (picked == null) return null;
         _settings.WadPath = picked;
         SaveSettings();
-        return _wadInUse = picked;
+        return (_wadInUse = picked, null);
+    }
+
+    /// <summary>A Doom WAD with Doomguy in it: the one picked before, else one found in Steam or GOG.</summary>
+    private string? YourDoom()
+    {
+        if (_settings.WadPath is { } p && File.Exists(p) && !WadFile.IsBundled(p)) return p;
+        var found = WadFile.FindInstalled();
+        if (found != null && found != _settings.WadPath)
+        {
+            _settings.WadPath = found;
+            SaveSettings();
+        }
+        return found;
     }
 
     private string _wadInUse = "";
+    private string? _yourDoom;
 
     private static string? AskForWad()
     {
-        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Doom IWAD (*.wad)|*.wad", Title = "Pick a Doom IWAD" };
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Doom IWAD (*.wad)|*.wad", Title = "Pick a Doom IWAD (DOOM.WAD, DOOM2.WAD or the shareware DOOM1.WAD)" };
         return dlg.ShowDialog() == true ? dlg.FileName : null;
     }
 
-    /// <summary>SETUP -> GAME DATA: use another WAD. The art is all loaded at startup, so DoomGuy restarts.</summary>
-    public void PickWad()
+    /// <summary>Found once at startup (SETUP asks every frame; the search walks the Steam and GOG folders).</summary>
+    public bool HasDoom => _yourDoom != null;
+
+    /// <summary>
+    /// SETUP -> GAME ART. With no Doom WAD yet, a click picks one (Doomguy's face, art unchanged); otherwise it
+    /// switches between Freedoom's art and Doom's. The art is loaded at startup, so DoomGuy restarts.
+    /// </summary>
+    public void SwitchArt()
     {
-        var picked = AskForWad();
-        if (picked == null) return;
-        try
+        if (!HasDoom)
         {
-            var wad = new WadFile(picked);
-            if (!wad.Has("PLAYPAL") || !wad.Has("STBAR")) throw new InvalidDataException("It has no status bar, so it isn't a Doom IWAD.");
+            var picked = AskForWad();
+            if (picked == null) return;
+            try
+            {
+                var wad = new WadFile(picked);
+                if (!wad.Has("PLAYPAL") || !wad.Has("STFST00")) throw new InvalidDataException("It has no Doomguy face, so it isn't a Doom IWAD.");
+            }
+            catch (Exception ex)
+            {
+                _hub?.Message($"CAN'T USE {Path.GetFileName(picked)}: {ex.Message}", Ink.Red, "error");
+                return;
+            }
+            _settings.WadPath = picked;
         }
-        catch (Exception ex)
-        {
-            _hub?.Message($"CAN'T USE {Path.GetFileName(picked)}: {ex.Message}", Ink.Red, "error");
-            return;
-        }
-        // Picking the shipped Freedoom WAD means "no preference": an installed Doom wins again from now on.
-        _settings.WadPath = WadFile.IsBundled(picked) ? null : picked;
+        else _settings.Art = _settings.Art == "doom" ? "freedoom" : "doom";
         Restart();
     }
 

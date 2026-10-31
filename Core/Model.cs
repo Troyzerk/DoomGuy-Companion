@@ -45,7 +45,10 @@ public sealed class LogLine
 
 public sealed class Settings
 {
+    /// <summary>Your Doom WAD (picked, or found in Steam/GOG): Doomguy's face, and the art when Art is "doom".</summary>
     public string? WadPath { get; set; }
+    /// <summary>"freedoom" (the shipped art, Doomguy's face on top when there's a Doom WAD) or "doom".</summary>
+    public string Art { get; set; } = "freedoom";
     public int Port { get; set; } = 6666;
     public bool Sound { get; set; } = true;
     public int Volume { get; set; } = 6;

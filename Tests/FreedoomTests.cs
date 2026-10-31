@@ -43,6 +43,34 @@ public class FreedoomTests
     }
 
     [FreedoomFact]
+    public void The_face_can_come_from_another_WAD_over_Freedoom_s_art()
+    {
+        // A stand-in for a Doom WAD: every face lump, each a 3x2 picture (Freedoom's faces are bigger).
+        byte[] tiny = [3, 0, 2, 0, 0, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0, 0xFF];
+        var names = new List<string> { "STFGOD0", "STFDEAD0" };
+        for (int pain = 0; pain < 5; pain++)
+        {
+            for (int s = 0; s < 3; s++) names.Add($"STFST{pain}{s}");
+            names.AddRange([$"STFTR{pain}0", $"STFTL{pain}0", $"STFOUCH{pain}", $"STFEVL{pain}", $"STFKILL{pain}"]);
+        }
+        var path = Path.Combine(Path.GetTempPath(), $"doomguy-faces-{Guid.NewGuid():N}.wad");
+        try
+        {
+            File.WriteAllBytes(path, WadTests.BuildWad("PWAD", names.Select(n => (n, tiny)).ToArray()));
+            var freedoom = new WadFile(FreedoomFactAttribute.Wad);
+            var a = new Assets(freedoom, new WadFile(path));
+            Assert.All(a.Faces, f => Assert.Equal((3, 2), (f!.Width, f.Height)));
+            Assert.Same(freedoom, a.Wad);
+            Assert.NotNull(a.StBar);
+
+            // A WAD without a face is ignored: the art's own face is used.
+            var plain = new Assets(freedoom, new WadFile(FreedoomFactAttribute.Wad));
+            Assert.NotEqual(3, plain.Faces[0]!.Width);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [FreedoomFact]
     public void The_shipped_WAD_is_recognised_as_the_bundled_one() =>
         // The test output gets the same Freedoom folder the app does, so this is the path the app would use.
         Assert.True(WadFile.IsBundled(FreedoomFactAttribute.Wad));

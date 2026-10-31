@@ -17,6 +17,15 @@ public class WadTests : IDisposable
 
     private string Build(string id, params (string Name, byte[] Data)[] lumps)
     {
+        var path = Path.Combine(Path.GetTempPath(), $"doomguy-test-{Guid.NewGuid():N}.wad");
+        File.WriteAllBytes(path, BuildWad(id, lumps));
+        _files.Add(path);
+        return path;
+    }
+
+    /// <summary>A WAD's bytes: header, the lumps, then the directory.</summary>
+    public static byte[] BuildWad(string id, params (string Name, byte[] Data)[] lumps)
+    {
         using var ms = new MemoryStream();
         using var w = new BinaryWriter(ms);
         w.Write(Encoding.ASCII.GetBytes(id));
@@ -35,10 +44,7 @@ public class WadTests : IDisposable
         }
         ms.Position = 8;
         w.Write(dir);
-        var path = Path.Combine(Path.GetTempPath(), $"doomguy-test-{Guid.NewGuid():N}.wad");
-        File.WriteAllBytes(path, ms.ToArray());
-        _files.Add(path);
-        return path;
+        return ms.ToArray();
     }
 
     [Fact]

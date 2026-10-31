@@ -15,7 +15,8 @@ public interface IShell
     void ApplyMini();
     void SaveSettings();
     string WadName { get; }
-    void PickWad();
+    bool HasDoom { get; }
+    void SwitchArt();
     string ApiStatus { get; }
 }
 
@@ -88,8 +89,9 @@ public sealed class MainScreen : Screen
                 () => Autostart.Enabled ? "ON" : "OFF", _ => Try(() => Autostart.Enabled = !Autostart.Enabled)),
             new("CLAUDE HOOKS", "REPORT EVERY CLAUDE CODE SESSION HERE",
                 () => ClaudeHooks.Installed() ? "ON" : "OFF", _ => ToggleHooks()),
-            new("GAME DATA", "WHERE THE ART AND SOUNDS COME FROM. CLICK TO PICK A WAD (DOOMGUY RESTARTS)",
-                () => shell.WadName, _ => shell.PickWad()),
+            new("GAME ART", "FREEDOOM OR DOOM. THE FACE IS DOOMGUY'S IF YOU HAVE DOOM",
+                () => shell.WadName == "FREEDOOM" ? (shell.HasDoom ? "FREEDOOM" : "FREEDOOM (ADD DOOM)") : "DOOM",
+                _ => shell.SwitchArt()),
         ];
     }
 

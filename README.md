@@ -6,11 +6,15 @@ A Doom-style desktop companion. It watches Claude Code sessions and anything els
 reminders, and when minimized floats the original Doom status bar on the desktop, where the marine's face
 is the health bar.
 
-Every graphic, font and sound is read at runtime from a Doom IWAD. **You don't need to own Doom:** DoomGuy
-ships with [Freedoom](https://freedoom.github.io/), a free, BSD-licensed replacement for Doom's art and
-sounds. If you do have The Ultimate Doom or Doom II (found automatically in the usual Steam and GOG folders,
-e.g. `Ultimate Doom\base\DOOM.WAD`), it uses the original instead, and SETUP -> GAME DATA picks any other
-WAD. This repository contains no id Software data.
+Every graphic, font and sound is read at runtime from Doom-format WADs. **You don't need to own Doom:**
+DoomGuy ships with [Freedoom](https://freedoom.github.io/), a free, BSD-licensed replacement for Doom's art
+and sounds, and draws its status bar, font and panels from that.
+
+The face is the one thing Freedoom can't stand in for, so it comes from Doom whenever you have it: The
+Ultimate Doom or Doom II from Steam or GOG (found automatically), or any Doom WAD you point it at, including
+the free shareware `DOOM1.WAD`. Then the real Doomguy sits on Freedoom's bar. Without one, the face is
+Freedoom's. SETUP -> GAME ART switches the rest between Freedoom's art and Doom's own (or, with no Doom
+found yet, picks a Doom WAD). This repository contains no id Software data.
 
 ![The TASKS tab with HD MODE on: Claude sessions and jobs, one waiting on you](docs/tasks.png)
 
@@ -20,8 +24,7 @@ WAD. This repository contains no id Software data.
 
 ![The HUD tab with HD MODE off: the original 8-bit look](docs/hud-8bit.png)
 
-Screenshots use made-up projects and the original Doom WAD; with Freedoom the status bar, face and font are
-Freedoom's own art.
+Screenshots use made-up projects, Freedoom's art and Doomguy's face from an installed copy of Doom.
 
 ## Requirements
 
@@ -42,7 +45,7 @@ dotnet run
 ```
 
 `get-freedoom.ps1` downloads Freedoom 0.13.0 (checked against its published SHA-256) into `Freedoom\`, which the
-build copies next to the exe. Without it DoomGuy still builds, and uses your Doom or asks for a WAD.
+build copies next to the exe. Without it DoomGuy still builds, and uses your Doom's art or asks for a WAD.
 
 For a standalone exe that doesn't need .NET installed:
 
@@ -71,7 +74,7 @@ App\DoomGuy.exe
   finished job to mark it seen; `X` dismisses.
 - **REMIND**: type `stand up in 30m`, `call mum at 18:00`, `water every 1h`, `rent tomorrow 9am`, then Enter.
 - **LOG**: everything that happened, under a line on how today went (done, errors, the longest task or job). **SETUP**: sound, volume, god mode (silent), bar/face, sizes,
-  hide-in-fullscreen, start with Windows, Claude hooks.
+  hide-in-fullscreen, start with Windows, Claude hooks, game art (Freedoom or Doom).
 
 Face-only mode is the quiet one: no HUD text at all. When a task finishes (a Claude task or a job reporting
 done/failed) or anything sends a `/notify`, the marine announces it in a speech bubble beside his head. It
