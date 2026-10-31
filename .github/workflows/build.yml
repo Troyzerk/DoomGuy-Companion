@@ -13,6 +13,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      - name: Fetch Freedoom
+        shell: pwsh
+        run: ./tools/get-freedoom.ps1
       - name: Build
         run: dotnet build DoomGuy.csproj -c Release
       - name: Test

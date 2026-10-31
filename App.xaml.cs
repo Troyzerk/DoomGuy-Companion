@@ -258,21 +258,72 @@ public partial class App : Application, IShell
         if (_alert != null) ZOrder.BringToTop(_alert);
     }
 
+    /// <summary>
+    /// Where the art and sounds come from: a WAD picked in SETUP, else an installed Doom, else the Freedoom
+    /// WAD shipped beside the exe (not saved as the choice, so installing Doom later takes over by itself).
+    /// Only when there's none of those does it ask.
+    /// </summary>
     private string? ResolveWad()
     {
-        if (_settings.WadPath is { } p && File.Exists(p)) return p;
+        if (_settings.WadPath is { } p && File.Exists(p)) return _wadInUse = p;
         var found = WadFile.FindInstalled();
-        if (found == null)
+        if (found != null)
         {
-            MessageBox.Show("DoomGuy draws everything from your own copy of Doom.\n\nPick DOOM.WAD or DOOM2.WAD (Steam: Ultimate Doom\\base\\DOOM.WAD).",
-                "DoomGuy", MessageBoxButton.OK, MessageBoxImage.Information);
-            var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Doom IWAD (*.wad)|*.wad", Title = "Find DOOM.WAD" };
-            if (dlg.ShowDialog() != true) return null;
-            found = dlg.FileName;
+            _settings.WadPath = found;
+            SaveSettings();
+            return _wadInUse = found;
         }
-        _settings.WadPath = found;
+        if (WadFile.Bundled() is { } free) return _wadInUse = free;
+
+        MessageBox.Show("DoomGuy draws everything from a Doom IWAD, and the Freedoom one it comes with is missing.\n\nPick DOOM.WAD, DOOM2.WAD or freedoom1.wad.",
+            "DoomGuy", MessageBoxButton.OK, MessageBoxImage.Information);
+        var picked = AskForWad();
+        if (picked == null) return null;
+        _settings.WadPath = picked;
         SaveSettings();
-        return found;
+        return _wadInUse = picked;
+    }
+
+    private string _wadInUse = "";
+
+    private static string? AskForWad()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog { Filter = "Doom IWAD (*.wad)|*.wad", Title = "Pick a Doom IWAD" };
+        return dlg.ShowDialog() == true ? dlg.FileName : null;
+    }
+
+    /// <summary>SETUP -> GAME DATA: use another WAD. The art is all loaded at startup, so DoomGuy restarts.</summary>
+    public void PickWad()
+    {
+        var picked = AskForWad();
+        if (picked == null) return;
+        try
+        {
+            var wad = new WadFile(picked);
+            if (!wad.Has("PLAYPAL") || !wad.Has("STBAR")) throw new InvalidDataException("It has no status bar, so it isn't a Doom IWAD.");
+        }
+        catch (Exception ex)
+        {
+            _hub?.Message($"CAN'T USE {Path.GetFileName(picked)}: {ex.Message}", Ink.Red, "error");
+            return;
+        }
+        // Picking the shipped Freedoom WAD means "no preference": an installed Doom wins again from now on.
+        _settings.WadPath = WadFile.IsBundled(picked) ? null : picked;
+        Restart();
+    }
+
+    /// <summary>Starts a fresh copy and quits this one (it lets go of the single-instance lock and the port first).</summary>
+    private void Restart()
+    {
+        SaveAll();
+        _server?.Stop();
+        try { _mutex?.ReleaseMutex(); _mutex?.Dispose(); } catch { }
+        _mutex = null;
+        if (Environment.ProcessPath is { } exe) Process.Start(new ProcessStartInfo(exe) { UseShellExecute = false });
+        if (_main != null) _main.AllowClose = true;
+        if (_mini != null) _mini.AllowClose = true;
+        if (_alert != null) _alert.AllowClose = true;
+        Shutdown();
     }
 
     // ---------------------------------------------------------------- IShell
@@ -319,7 +370,7 @@ public partial class App : Application, IShell
 
     public void SaveSettings() => Store.Save("settings.json", _settings);
 
-    public string WadName => Path.GetFileName(_settings.WadPath ?? "");
+    public string WadName => WadFile.IsBundled(_wadInUse) ? "FREEDOOM" : Path.GetFileName(_wadInUse).ToUpperInvariant();
 
     public string ApiStatus => _server?.Error ?? $"127.0.0.1:{_settings.Port}";
 

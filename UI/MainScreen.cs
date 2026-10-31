@@ -15,6 +15,7 @@ public interface IShell
     void ApplyMini();
     void SaveSettings();
     string WadName { get; }
+    void PickWad();
     string ApiStatus { get; }
 }
 
@@ -87,6 +88,8 @@ public sealed class MainScreen : Screen
                 () => Autostart.Enabled ? "ON" : "OFF", _ => Try(() => Autostart.Enabled = !Autostart.Enabled)),
             new("CLAUDE HOOKS", "REPORT EVERY CLAUDE CODE SESSION HERE",
                 () => ClaudeHooks.Installed() ? "ON" : "OFF", _ => ToggleHooks()),
+            new("GAME DATA", "WHERE THE ART AND SOUNDS COME FROM. CLICK TO PICK A WAD (DOOMGUY RESTARTS)",
+                () => shell.WadName, _ => shell.PickWad()),
         ];
     }
 
@@ -710,7 +713,9 @@ public sealed class MainScreen : Screen
 
     private void DrawSetup()
     {
-        const int rowH = 12;
+        // 11 units a row: all eleven settings fit in the panel, and the volume thermometer (13 tall, drawn
+        // from 2 above its row) still ends just before the next row's text.
+        const int rowH = 11;
         int y0 = Top + 2;
         for (int i = 0; i < _items.Count; i++)
         {

@@ -57,6 +57,19 @@ public sealed class WadFile
         return data;
     }
 
+    /// <summary>
+    /// Freedoom's Phase 1 IWAD, shipped beside the exe so DoomGuy works without a copy of Doom: free,
+    /// BSD-licensed replacement art and sounds with the same lump names (Freedoom\COPYING.txt).
+    /// </summary>
+    public static string? Bundled()
+    {
+        var p = System.IO.Path.Combine(AppContext.BaseDirectory, "Freedoom", "freedoom1.wad");
+        return File.Exists(p) ? p : null;
+    }
+
+    public static bool IsBundled(string path) =>
+        Bundled() is { } b && string.Equals(System.IO.Path.GetFullPath(path), System.IO.Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Looks for an original Doom IWAD in the usual Steam and GOG install folders.</summary>
     public static string? FindInstalled()
     {

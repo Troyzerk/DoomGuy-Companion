@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>DoomGuy</RootNamespace>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Product>DoomGuy</Product>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <AllowedReferenceRelatedFileExtensions>.pdb</AllowedReferenceRelatedFileExtensions>
@@ -22,6 +22,13 @@
     <Compile Remove="Tests\**" />
     <None Remove="Tests\**" />
     <Page Remove="Tests\**" />
+  </ItemGroup>
+
+  <!-- Freedoom ships beside the exe (not inside it) with its licence, so DoomGuy runs without Doom.
+       tools\get-freedoom.ps1 fetches the WAD; without it the app still builds and asks for a WAD. -->
+  <ItemGroup>
+    <None Update="Freedoom\freedoom1.wad;Freedoom\COPYING.txt;Freedoom\CREDITS.txt"
+          CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
   </ItemGroup>
 
 </Project>

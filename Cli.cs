@@ -23,7 +23,7 @@ public static class Cli
     /// <summary>Test aid: contact sheets of the original faces, the 6x versions and the in-betweens.</summary>
     private static void DumpFaces(string dir)
     {
-        var wad = Store.Load<Settings>("settings.json").WadPath ?? Doom.WadFile.FindInstalled() ?? throw new FileNotFoundException("No WAD.");
+        var wad = Store.Load<Settings>("settings.json").WadPath ?? Doom.WadFile.FindInstalled() ?? Doom.WadFile.Bundled() ?? throw new FileNotFoundException("No WAD.");
         var a = new Doom.Assets(new Doom.WadFile(wad));
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var hd = new Doom.HdFaces(a);
@@ -143,7 +143,7 @@ public static class Cli
                 case "dump-patch":
                 {
                     // Test aid: a WAD picture at 4x, hard pixels, with a grid line every 8 screen pixels.
-                    var wad = Store.Load<Settings>("settings.json").WadPath ?? Doom.WadFile.FindInstalled()!;
+                    var wad = Store.Load<Settings>("settings.json").WadPath ?? (Doom.WadFile.FindInstalled() ?? Doom.WadFile.Bundled())!;
                     var a = new Doom.Assets(new Doom.WadFile(wad));
                     var p = Doom.Patch.Parse(a.Wad.Lump(rest[0]))!;
                     const int s = 4;

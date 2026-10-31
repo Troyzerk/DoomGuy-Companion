@@ -6,9 +6,11 @@ A Doom-style desktop companion. It watches Claude Code sessions and anything els
 reminders, and when minimized floats the original Doom status bar on the desktop, where the marine's face
 is the health bar.
 
-Every graphic, font and sound is read at runtime from your own Doom IWAD (found automatically in the usual
-Steam and GOG folders, e.g. `Ultimate Doom\base\DOOM.WAD`, or picked on first run). This repository contains
-no Doom data at all; you need a legitimate copy of The Ultimate Doom or Doom II.
+Every graphic, font and sound is read at runtime from a Doom IWAD. **You don't need to own Doom:** DoomGuy
+ships with [Freedoom](https://freedoom.github.io/), a free, BSD-licensed replacement for Doom's art and
+sounds. If you do have The Ultimate Doom or Doom II (found automatically in the usual Steam and GOG folders,
+e.g. `Ultimate Doom\base\DOOM.WAD`), it uses the original instead, and SETUP -> GAME DATA picks any other
+WAD. This repository contains no id Software data.
 
 ![The TASKS tab with HD MODE on: Claude sessions and jobs, one waiting on you](docs/tasks.png)
 
@@ -18,26 +20,29 @@ no Doom data at all; you need a legitimate copy of The Ultimate Doom or Doom II.
 
 ![The HUD tab with HD MODE off: the original 8-bit look](docs/hud-8bit.png)
 
-Screenshots use made-up projects. The Doom art in them is drawn from the game's own WAD at runtime, as it
-would be on your machine.
+Screenshots use made-up projects and the original Doom WAD; with Freedoom the status bar, face and font are
+Freedoom's own art.
 
 ## Requirements
 
 - Windows 10 or 11
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) to build
-- `DOOM.WAD` or `DOOM2.WAD` from your own copy of the game
 
 ## Download
 
 Grab `DoomGuy-<version>-win-x64.zip` from [Releases](https://github.com/Troyzerk/DoomGuy-Companion/releases/latest),
-unzip it and run `DoomGuy.exe`: nothing else to install. It isn't code-signed, so SmartScreen may warn the
-first time (More info, then Run anyway).
+unzip it and run `DoomGuy.exe`: nothing else to install, Freedoom included. Keep the `Freedoom` folder next to
+the exe. It isn't code-signed, so SmartScreen may warn the first time (More info, then Run anyway).
 
 ## Building and running
 
 ```
+.\tools\get-freedoom.ps1
 dotnet run
 ```
+
+`get-freedoom.ps1` downloads Freedoom 0.13.0 (checked against its published SHA-256) into `Freedoom\`, which the
+build copies next to the exe. Without it DoomGuy still builds, and uses your Doom or asks for a WAD.
 
 For a standalone exe that doesn't need .NET installed:
 
@@ -46,8 +51,8 @@ dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true 
 App\DoomGuy.exe
 ```
 
-- `dotnet test Tests` runs the tests (reminder phrases, the WAD reader, the task and health rules). GitHub runs
-  the build and the tests on every push.
+- `dotnet test Tests` runs the tests (reminder phrases, the WAD reader, the task and health rules, and that
+  Freedoom has everything DoomGuy draws and plays). GitHub fetches Freedoom, builds and runs them on every push.
 - `--mini` starts minimized as the status bar.
 - Settings and state live in `%LOCALAPPDATA%\DoomGuy` (`settings.json`, `state.json`). Set `DOOMGUY_DATA` to use
   another folder, e.g. to run a test copy beside your own (give it another `Port` in its `settings.json`).
@@ -160,8 +165,12 @@ never slow Claude down, and they fail silently when DoomGuy isn't running. `unin
 
 - Upscaling uses a C# port of [xBRZ](https://sourceforge.net/projects/xbrz/) by Zenju (GPL-3.0).
 - Status bar layout follows the original Doom source (`st_stuff.c`), released by id Software under the GPL.
+- The bundled art and sounds are [Freedoom](https://freedoom.github.io/) 0.13.0, © 2001-2024 Contributors to the
+  Freedoom project, under a BSD-style licence ([Freedoom/COPYING.txt](Freedoom/COPYING.txt), credits in
+  [Freedoom/CREDITS.txt](Freedoom/CREDITS.txt)). DoomGuy isn't affiliated with or endorsed by the Freedoom project.
 
-DoomGuy is released under the GNU General Public License v3.0; see [LICENSE](LICENSE).
+DoomGuy is released under the GNU General Public License v3.0; see [LICENSE](LICENSE). Freedoom keeps its own
+licence.
 
 DOOM is a trademark of id Software LLC, a ZeniMax Media company. This is an unofficial fan project, not
 affiliated with or endorsed by id Software, ZeniMax or Bethesda, and it ships none of their game data.
